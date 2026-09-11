@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>🍌 Banana Clicker</title>
+
+<style>
+*{box-sizing:border-box}
+
+body{
+ margin:0;
+ min-height:100vh;
+ font-family:Arial,sans-serif;
+ color:white;
+ background:
+ radial-gradient(circle at top,#4b410e,#17170d 35%,#080910 75%);
+}
+
+.app{
+ max-width:1100px;
+ margin:auto;
+ padding:20px;
+}
+
+header{
+ display:flex;
+ justify-content:space-between;
+ align-items:center;
+}
+
+h1{
+ margin:0;
+ font-size:clamp(28px,7vw,48px);
+}
+
+.save{
+ background:#202534;
+ color:white;
+ border:1px solid #343b50;
+ padding:12px 18px;
+ border-radius:14px;
+}
+
+.stats{
+ display:grid;
+ grid-template-columns:repeat(3,1fr);
+ gap:10px;
+ margin-top:20px;
+}
+
+.stat{
+ background:#111520dd;
+ border:1px solid #2b3040;
+ border-radius:18px;
+ padding:15px;
+}
+
+.stat small{
+ color:#9299aa;
+}
+
+.stat b{
+ display:block;
+ font-size:25px;
+ margin-top:5px;
+}
+
+.main{
+ display:grid;
+ grid-template-columns:1fr 1fr;
+ gap:18px;
+ margin-top:18px;
+}
+
+.card{
+ background:#111520dd;
+ border:1px solid #2b3040;
+ border-radius:25px;
+ padding:20px;
+}
+
+.bananaArea{
+ height:420px;
+ display:grid;
+ place-items:center;
+ position:relative;
+}
+
+.banana{
+ background:none;
+ border:0;
+ font-size:170px;
+ cursor:pointer;
+ user-select:none;
+ transition:.08s;
+ filter:drop-shadow(0 20px 20px #000);
+}
+
+.banana:active{
+ transform:scale(.84) rotate(-5deg);
+}
+
+.float{
+ position:absolute;
+ color:#ffe45b;
+ font-weight:bold;
+ font-size:25px;
+ pointer-events:none;
+ animation:float .7s forwards;
+}
+
+@keyframes float{
+ from{
+  opacity:1;
+  transform:translateY(0);
+ }
+ to{
+  opacity:0;
+  transform:translateY(-70px);
+ }
+}
+
+.progress{
+ height:10px;
+ background:#080a0e;
+ border-radius:20px;
+ overflow:hidden;
+}
+
+.bar{
+ height:100%;
+ width:0%;
+ background:#ffd83d;
+ transition:.2s;
+}
+
+.message{
+ text-align:center;
+ color:#9299aa;
+ margin-top:12px;
+}
+
+.upgrade{
+ background:#171c29;
+ border:1px solid #2c3344;
+ border-radius:17px;
+ padding:15px;
+ margin:10px 0;
+}
+
+.upgrade h3{
+ margin:0 0 5px;
+}
+
+.upgrade p{
+ color:#9299aa;
+ font-size:13px;
+}
+
+.buy{
+ width:100%;
+ padding:11px;
+ border:0;
+ border-radius:12px;
+ background:#e8c600;
+ font-weight:bold;
+ cursor:pointer;
+}
+
+.buy:disabled{
+ background:#303542;
+ color:#777f90;
+ cursor:not-allowed;
+}
+
+.bottom{
+ display:grid;
+ grid-template-columns:repeat(3,1fr);
+ gap:12px;
+ margin-top:18px;
+}
+
+.prestige{
+ width:100%;
+ padding:15px;
+ border:0;
+ border-radius:16px;
+ background:#5846bd;
+ color:white;
+ font-weight:bold;
+ cursor:pointer;
+}
+
+.prestige:disabled{
+ opacity:.4;
+}
+
+@media(max-width:750px){
+ .main{
+  grid-template-columns:1fr;
+ }
+
+ .bananaArea{
+  height:330px;
+ }
+
+ .banana{
+  font-size:130px;
+ }
+}
+
+@media(max-width:450px){
+ .app{
+  padding:12px;
+ }
+
+ .bottom{
+  grid-template-columns:1fr 1fr;
+ }
+
+ .stats b{
+  font-size:19px;
+ }
+}
+</style>
+</head>
+
+<body>
+
+<div class="app">
+
+<header>
+ <h1>🍌 Banana Clicker</h1>
+ <button class="save" onclick="save()">💾 Zapisz</button>
+</header>
+
+<div class="stats">
+
+ <div class="stat">
+  <small>Banany</small>
+  <b id="bananas">0</b>
+ </div>
+
+ <div class="stat">
+  <small>Banany za klik</small>
+  <b id="perClick">1</b>
+ </div>
+
+ <div class="stat">
+  <small>Banany / sek</small>
+  <b id="perSecond">0</b>
+ </div>
+
+</div>
+
+<div class="main">
+
+<section class="card">
+
+ <div class="bananaArea" id="bananaArea">
+  <button class="banana" onclick="clickBanana()">🍌</button>
+ </div>
+
+ <div>
+  <small>Następny cel: <b id="goal">200</b> kliknięć</small>
+
+  <div class="progress">
+   <div class="bar" id="bar"></div>
+  </div>
+
+  <div class="message" id="message">
+   Klikaj banana
+  </div>
+ </div>
+
+</section>
+
+<section class="card">
+
+ <h2>🛒 Sklep</h2>
+
+ <div id="shop"></div>
+
+</section>
+
+</div>
+
+<div class="bottom">
+
+<div class="stat">
+ <small>Łączne kliknięcia</small>
+ <b id="clicks">0</b>
+</div>
+
+<div class="stat">
+ <small>Najlepsze combo</small>
+ <b id="bestCombo">0</b>
+</div>
+
+<div class="stat">
+ <small>Prestige</small>
+ <b id="prestige">0</b>
+</div>
+
+<button class="prestige" id="prestigeBtn" onclick="doPrestige()" disabled>
+ 🔄 Prestige za 1 000 000 bananów
+</button>
+
+</div>
+
+</div>
+
+<script>
+
+let game = JSON.parse(localStorage.getItem("bananaGame")) || {
+
+ bananas:0,
+ clicks:0,
+ perClick:1,
+ perSecond:0,
+ prestige:0,
+ combo:0,
+ bestCombo:0,
+
+ upgrades:{
+  click:0,
+  click2:0,
+  farm:0,
+  robot:0,
+  golden:0
+ }
+
+};
+
+const upgrades=[
+
+ {
+  id:"click",
+  name:"🍌 Lepsze klikanie",
+  description:"+1 banana za każde kliknięcie",
+  base:200,
+  type:"click",
+  value:1
+ },
+
+ {
+  id:"click2",
+  name:"🔥 Bananowy szał",
+  description:"+2 banany za każde kliknięcie",
+  base:1500,
+  type:"click",
+  value:2
+ },
+
+ {
+  id:"farm",
+  name:"🌴 Bananowa farma",
+  description:"+2 banany automatycznie na sekundę",
+  base:500,
+  type:"auto",
+  value:2
+ },
+
+ {
+  id:"robot",
+  name:"🤖 Bananowy robot",
+  description:"+12 bananów automatycznie na sekundę",
+  base:4000,
+  type:"auto",
+  value:12
+ },
+
+ {
+  id:"golden",
+  name:"✨ Złoty magnes",
+  description:"Golden Banany dają większą nagrodę",
+  base:8000,
+  type:"gold",
+  value:0.5
+ }
+
+];
+
+function format(n){
+
+ return Math.floor(n).toLocaleString("pl-PL");
+
+}
+
+function cost(upgrade){
+
+ return Math.floor(
+  upgrade.base *
+  Math.pow(2.25,game.upgrades[upgrade.id])
+ );
+
+}
+
+function clickBanana(){
+
+ let amount=
+   game.perClick *
+   (1 + game.prestige*0.25);
+
+ game.bananas+=amount;
+ game.clicks++;
+
+ game.combo++;
+
+ if(game.combo>game.bestCombo)
+  game.bestCombo=game.combo;
+
+ showFloat("+"+format(amount));
+
+ /*
+  Golden Banana
+  mała szansa na bonus
+ */
+
+ if(Math.random()<0.008){
+
+  let bonus=
+   Math.max(100,game.perClick*50) *
+   (1+game.upgrades.golden*0.5);
+
+  game.bananas+=bonus;
+
+  document.getElementById("message").textContent=
+   "✨ GOLDEN BANANA! +"+format(bonus);
+
+ }
+
+ if(game.clicks===200){
+
+  document.getElementById("message").textContent=
+   "🔥 200 kliknięć! Możesz kupić pierwszy upgrade";
+
+ }
+
+ render();
+
+}
+
+function showFloat(text){
+
+ let el=document.createElement("div");
+
+ el.className="float";
+ el.textContent=text;
+
+ el.style.left=
+  (45+Math.random()*15)+"%";
+
+ el.style.top="45%";
+
+ document
+  .getElementById("bananaArea")
+  .appendChild(el);
+
+ setTimeout(()=>el.remove(),700);
+
+}
+
+function buy(id){
+
+ let upgrade=
+  upgrades.find(u=>u.id===id);
+
+ let price=cost(upgrade);
+
+ if(game.bananas<price)
+  return;
+
+ game.bananas-=price;
+
+ game.upgrades[id]++;
+
+ if(upgrade.type==="click")
+  game.perClick+=upgrade.value;
+
+ if(upgrade.type==="auto")
+  game.perSecond+=upgrade.value;
+
+ render();
+
+ save();
+
+}
+
+function renderShop(){
+
+ let shop=document.getElementById("shop");
+
+ shop.innerHTML="";
+
+ upgrades.forEach(upgrade=>{
+
+  let price=cost(upgrade);
+  let owned=game.upgrades[upgrade.id];
+
+  let div=document.createElement("div");
+
+  div.className="upgrade";
+
+  div.innerHTML=`
+
+   <h3>${upgrade.name}</h3>
+
+   <p>${upgrade.description}</p>
+
+   <small>Posiadasz: ${owned}</small>
+
+   <br><br>
+
+   <button
+    class="buy"
+    ${game.bananas<price?"disabled":""}
+    onclick="buy('${upgrade.id}')">
+
+    Kup za ${format(price)} 🍌
+
+   </button>
+
+  `;
+
+  shop.appendChild(div);
+
+ });
+
+}
+
+function render(){
+
+ document.getElementById("bananas")
+  .textContent=format(game.bananas);
+
+ document.getElementById("perClick")
+  .textContent=format(game.perClick);
+
+ document.getElementById("perSecond")
+  .textContent=format(game.perSecond);
+
+ document.getElementById("clicks")
+  .textContent=format(game.clicks);
+
+ document.getElementById("bestCombo")
+  .textContent=format(game.bestCombo);
+
+ document.getElementById("prestige")
+  .textContent=format(game.prestige);
+
+ /*
+  progres do kolejnego celu
+ */
+
+ let goals=[
+  200,
+  1000,
+  5000,
+  25000,
+  100000
+ ];
+
+ let goal=
+  goals.find(x=>game.clicks<x) ||
+  500000;
+
+ document.getElementById("goal")
+  .textContent=format(goal);
+
+ let previous=
+  goals[goals.indexOf(goal)-1] || 0;
+
+ let percent=
+  ((game.clicks-previous)/
+  (goal-previous))*100;
+
+ document.getElementById("bar")
+  .style.width=Math.min(100,percent)+"%";
+
+ document.getElementById("prestigeBtn")
+  .disabled=game.bananas<1000000;
+
+ renderShop();
+
+}
+
+function doPrestige(){
+
+ if(game.bananas<1000000)
+  return;
+
+ if(!confirm(
+  "Prestige wyzeruje banany i ulepszenia. Kontynuować?"
+ ))
+  return;
+
+ game.bananas=0;
+ game.perClick=1;
+ game.perSecond=0;
+
+ game.upgrades={
+  click:0,
+  click2:0,
+  farm:0,
+  robot:0,
+  golden:0
+ };
+
+ game.prestige++;
+
+ document.getElementById("message")
+  .textContent=
+  "👑 Prestige! Masz stały bonus +25%";
+
+ save();
+ render();
+
+}
+
+function save(){
+
+ localStorage.setItem(
+  "bananaGame",
+  JSON.stringify(game)
+ );
+
+}
+
+setInterval(()=>{
+
+ if(game.perSecond>0){
+
+  game.bananas+=
+   game.perSecond;
+
+  render();
+
+ }
+
+},1000);
+
+setInterval(()=>{
+
+ game.combo=0;
+
+},1500);
+
+setInterval(save,30000);
+
+render();
+
+</script>
+
+</body>
+</html>
