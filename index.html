@@ -1,0 +1,472 @@
+
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#ffd21a">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./icon-192.png">
+<link rel="apple-touch-icon" href="./icon-192.png">
+<title>🍌 Banana Clicker v1.1</title>
+<style>
+:root{--yellow:#ffd21a;--bg:#111;--panel:#1c1c1c;--muted:#aaa}
+*{box-sizing:border-box}
+body{margin:0;padding:12px;background:#111;color:#fff;font-family:system-ui,Arial,sans-serif}
+.app{max-width:760px;margin:auto}
+h1{color:var(--yellow);font-size:28px;margin:4px 0}
+.panel{background:var(--panel);border:1px solid #383838;border-radius:16px;padding:15px;margin:12px 0}
+button{border:0;border-radius:11px;padding:11px 14px;background:var(--yellow);color:#111;font-weight:bold;cursor:pointer}
+button:disabled{opacity:.45}
+nav{display:flex;gap:7px;overflow-x:auto;padding:5px 0}
+nav button{white-space:nowrap;background:#292929;color:white}
+nav button.active{background:var(--yellow);color:#111}
+.hidden{display:none!important}
+.big{font-size:42px;text-align:center;font-weight:900;color:var(--yellow)}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:12px}
+.stat{background:#282828;border-radius:10px;text-align:center;padding:10px 4px}
+.stat strong{display:block;font-size:17px}
+.stat small{color:var(--muted)}
+#banana{display:block;margin:15px auto;font-size:95px;background:transparent;color:white}
+.item,.prestige-row{display:flex;justify-content:space-between;align-items:center;gap:10px;background:#292929;border-radius:12px;padding:12px;margin:9px 0}
+.item small,.prestige-row small{display:block;color:var(--muted);margin-top:4px}
+.notice,.muted{color:#aaa;font-size:13px;line-height:1.5}
+#nickGate{position:fixed;inset:0;background:#090909ed;z-index:20;display:grid;place-items:center;padding:16px}
+.gate{width:min(420px,100%);background:#1c1c1c;border:1px solid #444;border-radius:18px;padding:22px}
+input{width:100%;padding:13px;border-radius:10px;background:#111;color:white;border:1px solid #555;margin:9px 0;font:inherit}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:white;color:#111;padding:12px 17px;border-radius:12px;display:none;z-index:30;max-width:90%;font-weight:bold}
+.toast.show{display:block}
+
+/* TABELA — przesuwanie palcem jak zdjęcia na TikToku */
+.board-track{
+ display:flex;
+ width:100%;
+ overflow-x:auto;
+ overflow-y:hidden;
+ scroll-snap-type:x mandatory;
+ scroll-behavior:smooth;
+ -webkit-overflow-scrolling:touch;
+ overscroll-behavior-x:contain;
+ scrollbar-width:none;
+ border-radius:14px;
+}
+.board-track::-webkit-scrollbar{display:none}
+.board-slide{
+ flex:0 0 100%;
+ width:100%;
+ min-width:100%;
+ scroll-snap-align:start;
+ scroll-snap-stop:always;
+ background:#242424;
+ border:1px solid #3a3a3a;
+ border-radius:14px;
+ padding:12px;
+ min-height:210px;
+}
+.board-slide h3{color:var(--yellow);font-size:16px;margin:0 0 10px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{text-align:left;padding:10px 6px;border-bottom:1px solid #393939}
+th{color:#aaa;font-size:11px}
+td:last-child,th:last-child{text-align:right;white-space:nowrap}
+.empty{text-align:center;color:#aaa;padding:25px 4px}
+.dots{display:flex;justify-content:center;align-items:center;gap:9px;padding:14px 0 7px}
+.dot{padding:0;width:9px;height:9px;min-width:9px;border-radius:20px;background:#666}
+.dot.active{width:24px;background:var(--yellow)}
+.caption{text-align:center;color:#aaa;font-size:12px}
+</style>
+</head>
+<body>
+<div class="app">
+<header>
+<h1>🍌 Banana Clicker</h1>
+<div class="muted">OFICJALNE WYDANIE · v1.1</div>
+</header>
+
+<nav id="tabs">
+<button class="active" data-tab="game">🎮 Gra</button>
+<button data-tab="shop">🛒 Sklep</button>
+<button data-tab="prestige">✨ Prestiże</button>
+<button data-tab="leaderboard">🏆 Tabela</button>
+<button data-tab="news">📰 Co nowego?</button>
+</nav>
+
+<section id="game" class="tab">
+<div class="panel">
+<div class="muted" style="text-align:center">Twoje banany</div>
+<div class="big" id="bananas">0 🍌</div>
+<div class="stats">
+<div class="stat"><strong id="perClick">1</strong><small>🍌 / klik</small></div>
+<div class="stat"><strong id="perSecond">0</strong><small>🍌 / sekundę</small></div>
+<div class="stat"><strong id="prestigeStat">0</strong><small>Prestiże</small></div>
+</div>
+<button id="banana" aria-label="Kliknij banana">🍌</button>
+<p class="muted" style="text-align:center">Klikaj, kupuj ulepszenia i zdobywaj prestiże!</p>
+</div>
+<div class="panel">
+<h3>📊 Statystyki</h3>
+<div class="stats">
+<div class="stat"><strong id="clicks">0</strong><small>Kliknięcia</small></div>
+<div class="stat"><strong id="combo">0</strong><small>Seria</small></div>
+<div class="stat"><strong id="bestCombo">0</strong><small>Najlepsza seria</small></div>
+</div>
+<p class="notice">✨ Złoty Banan ma 1% szansy na pojawienie się i daje bonus bananów.</p>
+</div>
+</section>
+
+<section id="shop" class="tab hidden">
+<div class="panel"><h2>🛒 Sklep</h2><div id="shopItems"></div></div>
+</section>
+
+<section id="prestige" class="tab hidden">
+<div class="panel">
+<h2>✨ Prestiże</h2>
+<p class="notice">Każdy prestiż obniża ceny w sklepie o kolejne 10%, maksymalnie do 50%. Prestiże trzeba kupować po kolei. Banany i ulepszenia zostaną zresetowane.</p>
+<div id="prestigeItems"></div>
+</div>
+</section>
+
+<section id="leaderboard" class="tab hidden">
+<div class="panel">
+<h2>🏆 Tabela wyników</h2>
+<p class="notice">Przesuń tabelę palcem w lewo lub prawo, tak jak zdjęcia na TikToku. Możesz też kliknąć kropki pod tabelą.</p>
+<div style="display:flex;justify-content:flex-end;margin-bottom:8px">
+<button id="refreshBoard">↻ Odśwież</button>
+</div>
+
+<div class="board-track" id="boardTrack">
+<section class="board-slide">
+<h3>🍌 Najwięcej bananów</h3>
+<table><thead><tr><th>#</th><th>Nick</th><th>Banany</th></tr></thead><tbody id="board0"><tr><td colspan="3" class="empty">Ładowanie…</td></tr></tbody></table>
+</section>
+<section class="board-slide">
+<h3>⚙️ Banany na sekundę</h3>
+<table><thead><tr><th>#</th><th>Nick</th><th>Banany/s</th></tr></thead><tbody id="board1"><tr><td colspan="3" class="empty">Przesuń, aby zobaczyć ranking</td></tr></tbody></table>
+</section>
+<section class="board-slide">
+<h3>👆 Banany na klik</h3>
+<table><thead><tr><th>#</th><th>Nick</th><th>Banany/klik</th></tr></thead><tbody id="board2"><tr><td colspan="3" class="empty">Przesuń, aby zobaczyć ranking</td></tr></tbody></table>
+</section>
+<section class="board-slide">
+<h3>🖱️ Najwięcej kliknięć</h3>
+<table><thead><tr><th>#</th><th>Nick</th><th>Kliknięcia</th></tr></thead><tbody id="board3"><tr><td colspan="3" class="empty">Przesuń, aby zobaczyć ranking</td></tr></tbody></table>
+</section>
+</div>
+
+<div class="dots" id="boardDots">
+<button class="dot active" data-index="0" aria-label="Banany"></button>
+<button class="dot" data-index="1" aria-label="Banany na sekundę"></button>
+<button class="dot" data-index="2" aria-label="Banany na klik"></button>
+<button class="dot" data-index="3" aria-label="Kliknięcia"></button>
+</div>
+<p id="boardCaption" class="caption">1 z 4 · Banany</p>
+<p id="boardStatus" class="muted" aria-live="polite">Ranking online nie został jeszcze załadowany.</p>
+</div>
+</section>
+
+<section id="news" class="tab hidden">
+<div class="panel">
+<h2>📰 Co nowego?</h2>
+<h3>Spis aktualizacji 1.1</h3>
+<p>• Tabela wyników w czterech kategoriach.</p>
+<p>• Przewijanie tabeli palcem jak zdjęć na TikToku.</p>
+<p>• System prestiży i zniżki w sklepie.</p>
+<p>• Złoty Banan ma 1% szansy na pojawienie się.</p>
+</div>
+</section>
+</div>
+
+<div id="nickGate">
+<form class="gate" id="nickForm">
+<h2 style="color:#ffd21a">🍌 Witaj w Banana Clicker!</h2>
+<p class="notice">Wybierz nick od 4 do 18 znaków.</p>
+<label for="nickname">Twój nick</label>
+<input id="nickname" minlength="4" maxlength="18" placeholder="Wpisz nick…" required>
+<button style="width:100%" type="submit">GRAJ 🍌</button>
+<p id="nickError" class="notice"></p>
+</form>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+(() => {
+"use strict";
+const $ = id => document.getElementById(id);
+const SAVE_KEY = "bananaClickerGame";
+const NICK_KEY = "bananaClickerNickname";
+const SUPABASE_URL = "https://avxadyyjglycpatxjirx.supabase.co";
+const SUPABASE_KEY = "sb_publishable_BBgR6oedlul8s1aCTntZ2Q_nHkfQf9P";
+
+const state = {
+ bananas:0, clicks:0, perClick:1, perSecond:0, prestige:0,
+ combo:0, bestCombo:0,
+ upgrades:{click:0,click2:0,farm:0,robot:0,golden:0}
+};
+const upgradeInfo = {
+ click:{name:"Silniejszy klik",desc:"+1 banan za klik",base:200},
+ click2:{name:"Mega klik",desc:"+2 banany za klik",base:1500},
+ farm:{name:"Bananowa farma",desc:"+2 banany na sekundę",base:500},
+ robot:{name:"Robot bananowy",desc:"+12 bananów na sekundę",base:4000},
+ golden:{name:"Złoty magnes",desc:"Większy bonus Złotego Banana",base:8000}
+};
+const prestigeCosts=[1000000,100000000,250000000,500000000,1000000000];
+const boardColumns=[
+ {column:"bananas",label:"Banany"},
+ {column:"bananas_per_second",label:"Banany/s"},
+ {column:"bananas_per_click",label:"Banany/klik"},
+ {column:"total_clicks",label:"Kliknięcia"}
+];
+let supabaseClient=null,userId=null,currentBoard=0;
+const loadedBoards=new Set();
+let toastTimer,scrollFrame=0;
+
+function fmt(value){
+ const n=Number(value)||0;
+ if(n<1000000)return Math.floor(n).toLocaleString("pl-PL");
+ for(const [size,label] of [[1e12,"T"],[1e9,"B"],[1e6,"M"]]){
+  if(n>=size)return (n/size).toLocaleString("pl-PL",{maximumFractionDigits:2})+" "+label;
+ }
+ return String(Math.floor(n));
+}
+function toast(message){
+ const el=$("toast");el.textContent=message;el.classList.add("show");
+ clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove("show"),2200);
+}
+function save(){try{localStorage.setItem(SAVE_KEY,JSON.stringify(state));}catch(e){}}
+function recalc(){
+ const u=state.upgrades;
+ state.perClick=(1+u.click+2*u.click2)*Math.pow(1.25,state.prestige);
+ state.perSecond=2*u.farm+12*u.robot;
+}
+function cost(key){
+ return Math.floor(upgradeInfo[key].base*Math.pow(2.25,state.upgrades[key])*Math.max(.5,1-state.prestige*.1));
+}
+function load(){
+ try{
+  const saved=JSON.parse(localStorage.getItem(SAVE_KEY)||"null");
+  if(saved){
+   Object.assign(state,saved);
+   state.upgrades=Object.assign({click:0,click2:0,farm:0,robot:0,golden:0},saved.upgrades||{});
+  }
+ }catch(e){}
+ recalc();
+}
+function render(){
+ $("bananas").textContent=fmt(state.bananas)+" 🍌";
+ $("perClick").textContent=fmt(state.perClick);
+ $("perSecond").textContent=fmt(state.perSecond);
+ $("prestigeStat").textContent=state.prestige;
+ $("clicks").textContent=fmt(state.clicks);
+ $("combo").textContent=state.combo;
+ $("bestCombo").textContent=state.bestCombo;
+ renderShop();renderPrestiges();
+}
+function renderShop(){
+ const root=$("shopItems");root.replaceChildren();
+ Object.keys(upgradeInfo).forEach(key=>{
+  const info=upgradeInfo[key],price=cost(key),row=document.createElement("div");
+  row.className="item";
+  const infoBox=document.createElement("div");
+  const title=document.createElement("strong");
+  title.textContent=info.name+" · poziom "+state.upgrades[key];
+  const detail=document.createElement("small");
+  detail.textContent=info.desc+" · "+fmt(price)+" 🍌";
+  infoBox.append(title,detail);
+  const buy=document.createElement("button");buy.textContent="Kup";
+  buy.disabled=state.bananas<price;
+  buy.addEventListener("click",()=>{
+   const actual=cost(key);if(state.bananas<actual)return;
+   state.bananas-=actual;state.upgrades[key]++;recalc();save();render();
+   toast("Kupiono: "+info.name);
+  });
+  row.append(infoBox,buy);root.append(row);
+ });
+}
+function renderPrestiges(){
+ const root=$("prestigeItems");root.replaceChildren();
+ prestigeCosts.forEach((price,index)=>{
+  const level=index+1,row=document.createElement("div");row.className="prestige-row";
+  const details=document.createElement("div");
+  const title=document.createElement("strong");title.textContent="Prestiż "+level;
+  const small=document.createElement("small");
+  small.textContent="Koszt: "+fmt(price)+" 🍌 · zniżka sklepu: "+(level*10)+"%";
+  details.append(title,small);
+  const buy=document.createElement("button");
+  buy.textContent=state.prestige>=level?"Zdobyto":state.prestige===index?"Prestiż":"Zablokowany";
+  buy.disabled=state.prestige!==index||state.bananas<price;
+  buy.addEventListener("click",()=>{
+   if(state.prestige!==index||state.bananas<price)return;
+   if(!confirm("Zdobyć prestiż "+level+"? Banany i ulepszenia zostaną zresetowane."))return;
+   state.prestige=level;state.bananas=0;state.clicks=0;state.combo=0;state.bestCombo=0;
+   state.upgrades={click:0,click2:0,farm:0,robot:0,golden:0};
+   recalc();save();render();toast("Prestiż "+level+" zdobyty!");
+  });
+  row.append(details,buy);root.append(row);
+ });
+ const row=document.createElement("div");row.className="prestige-row";
+ row.innerHTML="<div><strong>Prestiż 6</strong><small>COMING SOON</small></div>";
+ const button=document.createElement("button");button.textContent="Wkrótce";button.disabled=true;
+ row.append(button);root.append(row);
+}
+
+$("banana").addEventListener("click",()=>{
+ state.bananas+=state.perClick;state.clicks++;state.combo++;
+ state.bestCombo=Math.max(state.bestCombo,state.combo);
+ if(Math.random()<.01){
+  const bonus=Math.floor(100*(1+state.upgrades.golden*.5));
+  state.bananas+=bonus;toast("✨ ZŁOTY BANAN! +"+fmt(bonus)+" 🍌");
+ }
+ render();save();
+});
+
+$("tabs").addEventListener("click",event=>{
+ const button=event.target.closest("button[data-tab]");if(!button)return;
+ document.querySelectorAll("#tabs button").forEach(b=>b.classList.toggle("active",b===button));
+ document.querySelectorAll(".tab").forEach(p=>p.classList.toggle("hidden",p.id!==button.dataset.tab));
+ if(button.dataset.tab==="leaderboard")loadBoard(currentBoard,true);
+});
+
+$("nickForm").addEventListener("submit",event=>{
+ event.preventDefault();
+ const nick=$("nickname").value.trim();
+ if(nick.length<4||nick.length>18){$("nickError").textContent="Nick musi mieć od 4 do 18 znaków.";return;}
+ $("nickError").textContent="";
+ try{localStorage.setItem(NICK_KEY,nick);}catch(e){}
+ $("nickGate").classList.add("hidden");
+ toast("Miłej gry, "+nick+"! 🍌");
+ // Supabase ładuje się w tle i nie blokuje wejścia do gry.
+ initSupabase().then(signInAndSync).then(()=>loadBoard(currentBoard,true)).catch(()=>{
+  $("boardStatus").textContent="Ranking online niedostępny. Gra działa lokalnie.";
+ });
+});
+
+function loadScript(url){
+ return new Promise((resolve,reject)=>{
+  const script=document.createElement("script");script.src=url;script.async=true;
+  script.onload=resolve;script.onerror=()=>reject(new Error("Nie udało się załadować Supabase."));
+  document.head.appendChild(script);
+ });
+}
+async function initSupabase(){
+ if(supabaseClient)return supabaseClient;
+ if(!window.supabase)await loadScript("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2");
+ supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+ return supabaseClient;
+}
+async function signInAndSync(){
+ try{
+  let result=await supabaseClient.auth.getSession();
+  if(result.error)throw result.error;
+  let session=result.data.session;
+  if(!session){
+   result=await supabaseClient.auth.signInAnonymously();
+   if(result.error)throw result.error;
+   session=result.data.session;
+  }
+  userId=session?.user?.id||null;
+  $("boardStatus").textContent=userId?"Połączono z rankingiem online.":"Tryb lokalny.";
+  if(userId)await uploadScore();
+ }catch(error){
+  $("boardStatus").textContent="Nie udało się połączyć. Sprawdź ustawienia Supabase.";
+  console.warn(error);
+ }
+}
+async function uploadScore(){
+ if(!supabaseClient||!userId)return;
+ const row={
+  user_id:userId,
+  nickname:localStorage.getItem(NICK_KEY)||"Gracz",
+  bananas:Math.floor(state.bananas),
+  bananas_per_second:Math.floor(state.perSecond),
+  bananas_per_click:Math.floor(state.perClick),
+  total_clicks:Math.floor(state.clicks)
+ };
+ try{
+  const {error}=await supabaseClient.from("leaderboard").upsert(row,{onConflict:"user_id"});
+  if(error)throw error;
+ }catch(error){console.warn("Błąd zapisu wyniku:",error);}
+}
+function showBoardMessage(index,message){
+ const body=$("board"+index);body.replaceChildren();
+ const row=document.createElement("tr"),cell=document.createElement("td");
+ cell.colSpan=3;cell.className="empty";cell.textContent=message;
+ row.append(cell);body.append(row);
+}
+async function loadBoard(index,force=false){
+ if(!supabaseClient){
+  if(force)showBoardMessage(index,"Ranking online niedostępny.");
+  return;
+ }
+ if(loadedBoards.has(index)&&!force)return;
+ showBoardMessage(index,"Ładowanie rankingu…");
+ try{
+  const {data,error}=await supabaseClient.from("leaderboard")
+   .select("nickname,bananas,bananas_per_second,bananas_per_click,total_clicks")
+   .order(boardColumns[index].column,{ascending:false}).limit(50);
+  if(error)throw error;
+  const body=$("board"+index);body.replaceChildren();
+  if(!data||!data.length){showBoardMessage(index,"Brak wyników — bądź pierwszym graczem!");loadedBoards.add(index);return;}
+  data.forEach((item,i)=>{
+   const row=document.createElement("tr");
+   const rank=document.createElement("td");rank.textContent=String(i+1);
+   const nickname=document.createElement("td");nickname.textContent=item.nickname||"Gracz";
+   const score=document.createElement("td");score.textContent=fmt(item[boardColumns[index].column]);
+   row.append(rank,nickname,score);body.append(row);
+  });
+  loadedBoards.add(index);
+  $("boardStatus").textContent="Ranking online · "+data.length+" wyników";
+ }catch(error){
+  showBoardMessage(index,"Ranking chwilowo niedostępny.");
+  $("boardStatus").textContent="Sprawdź połączenie i konfigurację tabeli Supabase.";
+  console.warn("Błąd rankingu:",error);
+ }
+}
+function updateDots(index){
+ currentBoard=index;
+ document.querySelectorAll(".dot").forEach((dot,i)=>dot.classList.toggle("active",i===index));
+ $("boardCaption").textContent=(index+1)+" z 4 · "+boardColumns[index].label;
+ loadBoard(index);
+}
+// Gest przesunięcia działa natywnie przez overflow-x i scroll-snap.
+$("boardTrack").addEventListener("scroll",()=>{
+ if(scrollFrame)return;
+ scrollFrame=requestAnimationFrame(()=>{
+  scrollFrame=0;
+  const track=$("boardTrack");
+  const index=Math.max(0,Math.min(3,Math.round(track.scrollLeft/Math.max(1,track.clientWidth))));
+  if(index!==currentBoard)updateDots(index);
+ });
+},{passive:true});
+$("boardDots").addEventListener("click",event=>{
+ const dot=event.target.closest(".dot");if(!dot)return;
+ const index=Number(dot.dataset.index);
+ $("boardTrack").scrollTo({left:index*$("boardTrack").clientWidth,behavior:"smooth"});
+ updateDots(index);
+});
+$("refreshBoard").addEventListener("click",async()=>{
+ loadedBoards.delete(currentBoard);
+ try{await initSupabase();await signInAndSync();await loadBoard(currentBoard,true);}
+ catch(error){showBoardMessage(currentBoard,"Ranking online niedostępny.");}
+});
+
+setInterval(()=>{
+ if(state.perSecond>0){state.bananas+=state.perSecond;render();save();}
+ if(supabaseClient&&userId)uploadScore();
+},1000);
+
+load();render();
+try{
+ const savedNick=localStorage.getItem(NICK_KEY);
+ if(savedNick){
+  $("nickname").value=savedNick;
+  $("nickGate").classList.add("hidden");
+  initSupabase().then(signInAndSync).then(()=>loadBoard(0,true)).catch(()=>{});
+ }
+}catch(e){}
+if("serviceWorker" in navigator){
+ window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(console.warn));
+}
+})();
+</script>
+</body>
+  </html>
+  
