@@ -1,0 +1,494 @@
+
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#ffd21a">
+<meta name="description" content="Banana Clicker — klikaj, ulepszaj i zdobywaj prestiże!">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./icon-192.png">
+<link rel="apple-touch-icon" href="./icon-192.png">
+<title>🍌 Banana Clicker</title>
+
+<style>
+:root {
+  --yellow: #ffd21a;
+  --bg: #101010;
+  --panel: #1c1c1c;
+  --panel2: #252525;
+  --text: #fff;
+  --muted: #b8b8b8;
+  --green: #54e38e;
+  --red: #ff7777;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; min-height: 100%; }
+body {
+  background: radial-gradient(ellipse at top, #29230c, var(--bg) 48%);
+  color: var(--text);
+  font-family: system-ui, -apple-system, Arial, sans-serif;
+  padding-bottom: 28px;
+}
+button, input { font: inherit; }
+button { cursor: pointer; }
+button:disabled { opacity: .5; cursor: wait; }
+button:focus-visible, input:focus-visible {
+  outline: 2px solid var(--yellow);
+  outline-offset: 3px;
+}
+header { text-align: center; padding: 20px 12px 12px; }
+header h1 { color: var(--yellow); margin: 0; font-size: clamp(25px, 6vw, 36px); }
+header p { margin: 5px 0 0; color: var(--muted); }
+#playerLine { margin-top: 8px; font-size: 13px; color: var(--muted); }
+#playerLine strong { color: var(--yellow); }
+
+nav {
+  display: flex;
+  gap: 7px;
+  padding: 10px;
+  overflow-x: auto;
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: rgba(16,16,16,.95);
+  backdrop-filter: blur(10px);
+}
+nav button {
+  flex: 0 0 auto;
+  border: 1px solid #393939;
+  border-radius: 12px;
+  padding: 10px 13px;
+  color: white;
+  background: #222;
+  font-weight: 700;
+}
+nav button.active { color: #171717; background: var(--yellow); border-color: var(--yellow); }
+main { max-width: 760px; margin: auto; padding: 8px 13px; }
+.page { display: none; }
+.page.active { display: block; }
+.panel {
+  background: rgba(28,28,28,.96);
+  border: 1px solid #353535;
+  border-radius: 18px;
+  padding: 17px;
+  margin: 12px 0;
+  box-shadow: 0 7px 24px #0003;
+}
+h2 { margin: 0 0 14px; font-size: 22px; }
+h3 { margin: 0 0 7px; }
+.muted { color: var(--muted); }
+.small { font-size: 12px; color: var(--muted); }
+.stats { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 9px; }
+.stat { background: var(--panel2); border: 1px solid #383838; border-radius: 13px; padding: 12px; min-width: 0; }
+.stat .label { color: var(--muted); font-size: 12px; }
+.stat .value { margin-top: 5px; color: var(--yellow); font-weight: 800; font-size: clamp(18px,4.8vw,25px); overflow-wrap: anywhere; }
+#bananaButton {
+  display: block;
+  width: min(72vw,290px);
+  height: min(72vw,290px);
+  max-height: 290px;
+  max-width: 290px;
+  margin: 14px auto 7px;
+  background: transparent;
+  border: 0;
+  border-radius: 50%;
+  font-size: clamp(100px,31vw,190px);
+  line-height: 1;
+  filter: drop-shadow(0 10px 14px #0008);
+  transition: transform .08s;
+  -webkit-tap-highlight-color: transparent;
+}
+#bananaButton:active { transform: scale(.93) rotate(-5deg); }
+#clickHint { text-align: center; color: var(--muted); font-size: 13px; }
+button.primary, .action {
+  border: 0; border-radius: 12px; padding: 12px 15px;
+  font-weight: 800; color: #181818; background: var(--yellow);
+}
+button.secondary {
+  border: 1px solid #484848; border-radius: 12px; padding: 11px 14px;
+  background: #292929; color: white; font-weight: 700;
+}
+button.danger { border: 1px solid #7b3030; border-radius: 12px; padding: 10px 13px; background: #3a1d1d; color: #ffaaaa; }
+.row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.row > .grow { flex: 1; }
+.shopItem, .prestigeItem {
+  display: flex; align-items: center; gap: 12px; margin: 10px 0;
+  padding: 13px; border-radius: 14px; background: var(--panel2); border: 1px solid #393939;
+}
+.itemEmoji { font-size: 34px; width: 42px; text-align: center; }
+.itemInfo { flex: 1; min-width: 0; }
+.itemInfo p { margin: 4px 0; color: var(--muted); font-size: 13px; }
+.itemInfo .cost { color: var(--yellow); font-weight: 800; }
+.shopItem button, .prestigeItem button { flex: 0 0 auto; }
+.notice { padding: 12px; border-radius: 12px; background: #332c10; border: 1px solid #62521b; color: #ffe89a; margin: 10px 0; }
+.success { color: var(--green); }
+.error { color: var(--red); }
+.leaderboardTop { display: flex; gap: 7px; overflow-x: auto; padding-bottom: 9px; }
+.leaderboardTop button { flex: 0 0 auto; background: #292929; border: 1px solid #414141; color: white; padding: 9px 12px; border-radius: 10px; }
+.leaderboardTop button.active { background: var(--yellow); color: #171717; border-color: var(--yellow); }
+.boardTable { width: 100%; border-collapse: collapse; }
+.boardTable th, .boardTable td { text-align: left; padding: 11px 7px; border-bottom: 1px solid #383838; overflow-wrap: anywhere; }
+.boardTable th { font-size: 12px; color: var(--muted); }
+.boardTable td { font-size: 14px; }
+.boardTable th:last-child, .boardTable td:last-child { text-align: right; }
+.boardWrap { overflow-x: auto; }
+#boardStatus { font-size: 13px; color: var(--muted); margin: 8px 0; }
+#boardDots { text-align: center; padding: 10px; color: var(--muted); }
+.dot { display: inline-block; margin: 0 4px; color: #555; }
+.dot.active { color: var(--yellow); }
+.updateItem { border-left: 3px solid var(--yellow); padding: 2px 0 2px 13px; margin: 16px 0; }
+.updateItem p { color: var(--muted); margin: 5px 0; }
+footer { text-align: center; color: #777; font-size: 12px; padding: 20px; }
+
+/* Pełnoekranowy ekran nicku */
+#nickGate {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 22px;
+  background: radial-gradient(ellipse at top,#332a0b 0%,#101010 65%);
+}
+#nickGate.hidden { display: none; }
+.nickCard {
+  width: 100%; max-width: 420px; background: #1c1c1c;
+  border: 1px solid #51451a; border-radius: 23px; padding: 25px 20px;
+  text-align: center; box-shadow: 0 18px 70px #0009;
+}
+.nickBanana { font-size: 66px; }
+.nickCard h2 { color: var(--yellow); margin: 7px 0; }
+.nickCard p { color: var(--muted); line-height: 1.5; }
+.nickCard input {
+  display: block; width: 100%; margin: 17px 0 10px; padding: 14px;
+  background: #111; border: 1px solid #555; border-radius: 12px; color: white;
+}
+.nickCard button { width: 100%; }
+#nickStatus { min-height: 22px; font-size: 13px; margin-top: 12px; overflow-wrap: anywhere; }
+#installBox {
+  position: fixed; z-index: 100; bottom: max(12px,env(safe-area-inset-bottom));
+  left: 12px; right: 12px; max-width: 560px; margin: auto; display: none;
+  padding: 15px; background: #242424; border: 1px solid var(--yellow);
+  border-radius: 17px; box-shadow: 0 8px 35px #000a;
+}
+#installBox p { margin: 5px 0 12px; color: var(--muted); font-size: 13px; }
+#installBox .row button { flex: 1; }
+#toast {
+  position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%);
+  z-index: 200; background: #282828; color: white; border: 1px solid #555;
+  border-radius: 12px; padding: 11px 16px; display: none; max-width: 90vw; text-align: center;
+}
+@media (min-width:600px) { .stats { grid-template-columns: repeat(3,minmax(0,1fr)); } }
+</style>
+</head>
+
+<body>
+<div id="nickGate">
+  <div class="nickCard">
+    <div class="nickBanana">🍌</div>
+    <h2>Banana Clicker</h2>
+    <h3>Wybierz swój nick</h3>
+    <p>Nick jest wymagany, aby rozpocząć grę i pojawić się w globalnej tabeli wyników.</p>
+    <form id="nickForm">
+      <input id="nicknameInput" type="text" minlength="4" maxlength="18"
+        autocomplete="nickname" placeholder="Twój nick (4–18 znaków)" aria-label="Twój nick" required>
+      <button class="primary" id="nickSubmit" type="submit">GRAJ 🍌</button>
+    </form>
+    <div id="nickStatus" role="status" aria-live="polite"></div>
+    <div class="small">Nie wpisuj tu hasła ani prywatnych danych.</div>
+  </div>
+</div>
+
+<header>
+  <h1>🍌 Banana Clicker</h1>
+  <p>Oficjalne wydanie 1.1</p>
+  <div id="playerLine">Gracz: <strong id="currentNick">—</strong></div>
+</header>
+
+<nav aria-label="Menu gry">
+  <button class="active" data-tab="game" onclick="openTab('game',this)">🍌 Gra</button>
+  <button data-tab="shop" onclick="openTab('shop',this)">🛒 Sklep</button>
+  <button data-tab="prestige" onclick="openTab('prestige',this)">⭐ Prestiże</button>
+  <button data-tab="leaderboard" onclick="openTab('leaderboard',this)">🏆 Tabela</button>
+  <button data-tab="news" onclick="openTab('news',this)">📰 Co nowego?</button>
+</nav>
+
+<main>
+  <section class="page active" id="game">
+    <div class="panel">
+      <div class="stats">
+        <div class="stat"><div class="label">🍌 Banany</div><div class="value" id="bananas">0</div></div>
+        <div class="stat"><div class="label">👆 Banany / klik</div><div class="value" id="perClick">1</div></div>
+        <div class="stat"><div class="label">⚙️ Banany / sek.</div><div class="value" id="perSecond">0</div></div>
+        <div class="stat"><div class="label">👆 Łączne kliknięcia</div><div class="value" id="clicks">0</div></div>
+        <div class="stat"><div class="label">🔥 Najlepsze combo</div><div class="value" id="bestCombo">0</div></div>
+        <div class="stat"><div class="label">⭐ Prestiże</div><div class="value" id="prestigeCount">0</div></div>
+      </div>
+      <button id="bananaButton" aria-label="Kliknij banana">🍌</button>
+      <div id="clickHint">Klikaj banana, aby zdobywać banany!</div>
+      <div class="notice">✨ Golden Banana ma 1% szansy i daje bonus bananów!</div>
+      <div class="row">
+        <button class="secondary grow" onclick="openTab('shop')">🛒 Otwórz sklep</button>
+        <button class="secondary grow" onclick="openTab('prestige')">⭐ Prestiże</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="page" id="shop">
+    <div class="panel"><h2>🛒 Sklep</h2><p class="muted">Kup ulepszenia, aby zdobywać więcej bananów.</p><div id="shopItems"></div></div>
+  </section>
+
+  <section class="page" id="prestige">
+    <div class="panel">
+      <h2>⭐ Prestiże</h2>
+      <p class="muted">Prestiż resetuje banany i ulepszenia, ale daje stałe korzyści.</p>
+      <div class="notice">Każdy prestiż zwiększa siłę kliku o 25% i obniża ceny ulepszeń o 10%, maksymalnie o 50%.</div>
+      <div id="prestigeItems"></div>
+    </div>
+  </section>
+
+  <section class="page" id="leaderboard">
+    <div class="panel">
+      <h2>🏆 Globalna tabela wyników</h2>
+      <p class="muted">Wyniki graczy pobierane z Supabase.</p>
+      <div class="leaderboardTop">
+        <button class="active" onclick="showBoard(0,this)">🍌 Banany</button>
+        <button onclick="showBoard(1,this)">⚙️ Banany/s</button>
+        <button onclick="showBoard(2,this)">👆 Banany/klik</button>
+        <button onclick="showBoard(3,this)">🖱️ Kliknięcia</button>
+      </div>
+      <div id="boardStatus" role="status" aria-live="polite">Ładowanie tabeli...</div>
+      <div class="boardWrap">
+        <table class="boardTable">
+          <thead><tr><th>#</th><th>Gracz</th><th id="boardHeading">Banany</th></tr></thead>
+          <tbody id="boardRows"><tr><td colspan="3">Wczytywanie...</td></tr></tbody>
+        </table>
+      </div>
+      <div id="boardDots"><span class="dot active">●</span><span class="dot">●</span><span class="dot">●</span><span class="dot">●</span></div>
+      <div class="row">
+        <button class="secondary grow" onclick="loadLeaderboard()">🔄 Odśwież tabelę</button>
+        <button class="secondary grow" onclick="saveScore(true)">☁️ Zapisz wynik</button>
+      </div>
+      <p class="small">Wyniki online nie są w pełni odporne na oszukiwanie.</p>
+    </div>
+  </section>
+
+  <section class="page" id="news">
+    <div class="panel">
+      <h2>📰 Co nowego?</h2>
+      <p class="muted">Spis Aktualizacji 1.1</p>
+      <div class="updateItem"><h3>🌍 Globalna tabela wyników</h3><p>Wyniki przechowywane online i widoczne dla innych graczy.</p></div>
+      <div class="updateItem"><h3>👤 System nicków</h3><p>Nick wybierasz przed wejściem do gry. Długość: 4–18 znaków.</p></div>
+      <div class="updateItem"><h3>✨ Golden Banana</h3><p>Szansa wynosi 1%. Złoty magnes zwiększa bonus.</p></div>
+      <div class="updateItem"><h3>⭐ Prestiże</h3><p>Resetuj postęp, aby zdobywać stałe bonusy.</p></div>
+      <div class="updateItem"><h3>📱 PWA</h3><p>Dodaj grę do ekranu głównego, jeśli przeglądarka obsługuje instalację.</p></div>
+    </div>
+  </section>
+</main>
+
+<footer>Banana Clicker 1.1 · Miłego klikania! 🍌</footer>
+
+<div id="installBox">
+  <strong>📱 Dodaj Banana Clicker do ekranu głównego!</strong>
+  <p>Uruchamiaj grę jak aplikację.</p>
+  <div class="row"><button class="primary" id="installButton">Dodaj</button><button class="secondary" id="dismissInstall">Nie teraz</button></div>
+</div>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+"use strict";
+
+/* Ładowanie Supabase: najpierw sprawdź, czy biblioteka jest dostępna. */
+const SUPABASE_URL = "https://avxadyyjglycpatxjirx.supabase.co";
+const SUPABASE_KEY = "sb_publishable_BBgR6oedlul8s1aCTntZ2Q_nHkfQf9P";
+let supabaseClient = null;
+
+const SAVE_KEY = "bananaClickerGame";
+const NICK_KEY = "bananaClickerNickname";
+const INSTALL_DISMISSED_KEY = "bananaClickerInstallDismissed";
+
+const upgradeData = {
+  click:  { name: "Mocniejszy klik", emoji: "👆", description: "+1 banan za klik", base: 200 },
+  click2: { name: "Mega klik", emoji: "💥", description: "+2 banany za klik", base: 1500 },
+  farm:   { name: "Farma bananów", emoji: "🌱", description: "+2 banany na sekundę", base: 500 },
+  robot:  { name: "Bananowy robot", emoji: "🤖", description: "+12 bananów na sekundę", base: 4000 },
+  golden: { name: "Złoty magnes", emoji: "🧲", description: "+50% bonusu Golden Banana", base: 8000 }
+};
+const prestigePrices = [1e6, 1e7, 1e8, 5e8, 1e9];
+const $ = id => document.getElementById(id);
+
+let state = {
+  bananas: 0, clicks: 0, perClick: 1, perSecond: 0,
+  prestige: 0, combo: 0, bestCombo: 0,
+  upgrades: { click: 0, click2: 0, farm: 0, robot: 0, golden: 0 }
+};
+let nickname = "";
+let authUserId = null;
+let authReady = false;
+let currentBoard = 0;
+let saveTimer = null;
+let lastClickTime = 0;
+let comboTimer = null;
+let deferredInstallPrompt = null;
+let savingScore = false;
+let scoreSaveQueued = false;
+let nickRequestInProgress = false;
+let boardRequestId = 0;
+
+function formatNumber(value) {
+  const n = Number(value) || 0;
+  if (Math.abs(n) < 1000) return Number(n.toFixed(2)).toLocaleString("pl-PL");
+  const units = [[1e12,"T"],[1e9,"BLD"],[1e6,"M"],[1e3,"K"]];
+  for (const [size,suffix] of units) {
+    if (Math.abs(n) >= size) {
+      const x = n / size;
+      return (x >= 100 ? x.toFixed(0) : x >= 10 ? x.toFixed(1) : x.toFixed(2)).replace(".",",") + " " + suffix;
+    }
+  }
+  return String(n);
+}
+
+function toast(message) {
+  $("toast").textContent = message;
+  $("toast").style.display = "block";
+  clearTimeout(toast.timer);
+  toast.timer = setTimeout(() => $("toast").style.display = "none", 2600);
+}
+
+function setNickStatus(message, type = "") {
+  $("nickStatus").textContent = message;
+  $("nickStatus").className = type;
+}
+
+function initializeSupabase() {
+  if (supabaseClient) return true;
+  if (!window.supabase || typeof window.supabase.createClient !== "function") {
+    setNickStatus("Nie załadował się system online. Sprawdź internet i odśwież stronę.", "error");
+    console.error("Supabase UMD SDK nie jest dostępne.");
+    return false;
+  }
+  try {
+    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    return true;
+  } catch (error) {
+    console.error("Błąd inicjalizacji Supabase:", error);
+    setNickStatus("Nie udało się uruchomić połączenia online. Odśwież stronę.", "error");
+    return false;
+  }
+}
+
+/* Awaryjne ładowanie SDK: jeśli pierwszy CDN nie zadziała, spróbuj drugiego. */
+function loadSupabaseSDK() {
+  if (initializeSupabase()) return Promise.resolve(true);
+  if (window.__supabaseRetryStarted) {
+    return new Promise(resolve => {
+      const started = Date.now();
+      const poll = setInterval(() => {
+        if (initializeSupabase()) {
+          clearInterval(poll);
+          resolve(true);
+        } else if (Date.now() - started > 8000) {
+          clearInterval(poll);
+          resolve(false);
+        }
+      }, 250);
+    });
+  }
+
+  window.__supabaseRetryStarted = true;
+  return new Promise(resolve => {
+    const script = document.createElement("script");
+    script.src = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js";
+    script.onload = () => resolve(initializeSupabase());
+    script.onerror = () => {
+      const fallback = document.createElement("script");
+      fallback.src = "https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js";
+      fallback.onload = () => resolve(initializeSupabase());
+      fallback.onerror = () => {
+        setNickStatus("Nie można załadować systemu online. Sprawdź internet i spróbuj ponownie.", "error");
+        resolve(false);
+      };
+      document.head.appendChild(fallback);
+    };
+    document.head.appendChild(script);
+  });
+}
+
+function prestigeMultiplier() {
+  return Math.max(0.5, 1 - state.prestige * 0.1);
+}
+function upgradeCost(key) {
+  return Math.floor(upgradeData[key].base * Math.pow(2.25, state.upgrades[key] || 0) * prestigeMultiplier());
+}
+function recomputeStats() {
+  const u = state.upgrades;
+  state.perClick = (1 + u.click + u.click2 * 2) * Math.pow(1.25, state.prestige);
+  state.perSecond = u.farm * 2 + u.robot * 12;
+}
+function getGoldenBonus() {
+  return 100 * (1 + (state.upgrades.golden || 0) * 0.5);
+}
+
+function normalizeState(data) {
+  if (!data || typeof data !== "object") return;
+  const num = (value, fallback = 0) => {
+    const n = Number(value);
+    return Number.isFinite(n) && n >= 0 ? n : fallback;
+  };
+  state.bananas = num(data.bananas);
+  state.clicks = Math.floor(num(data.clicks));
+  state.prestige = Math.floor(num(data.prestige));
+  state.combo = Math.floor(num(data.combo));
+  state.bestCombo = Math.floor(num(data.bestCombo));
+  state.upgrades = { ...state.upgrades, ...(data.upgrades || {}) };
+  for (const key of Object.keys(upgradeData)) state.upgrades[key] = Math.floor(num(state.upgrades[key]));
+  recomputeStats();
+}
+function saveGame() {
+  try {
+    localStorage.setItem(SAVE_KEY, JSON.stringify({ ...state, nickname, savedAt: Date.now() }));
+  } catch (error) { console.warn("Nie udało się zapisać gry:", error); }
+}
+function loadGame() {
+  try {
+    const saved = localStorage.getItem(SAVE_KEY);
+    if (saved) normalizeState(JSON.parse(saved));
+  } catch (error) { console.warn("Zapis gry jest nieprawidłowy:", error); }
+}
+
+function renderStats() {
+  recomputeStats();
+  $("bananas").textContent = formatNumber(state.bananas);
+  $("perClick").textContent = formatNumber(state.perClick);
+  $("perSecond").textContent = formatNumber(state.perSecond);
+  $("clicks").textContent = formatNumber(state.clicks);
+  $("bestCombo").textContent = formatNumber(state.bestCombo);
+  $("prestigeCount").textContent = formatNumber(state.prestige);
+  $("currentNick").textContent = nickname || "—";
+  renderShop();
+  renderPrestige();
+}
+
+function renderShop() {
+  const root = $("shopItems");
+  root.replaceChildren();
+  for (const [key,item] of Object.entries(upgradeData)) {
+    const cost = upgradeCost(key);
+    const card = document.createElement("div");
+    card.className = "shopItem";
+    const emoji = document.createElement("div");
+    emoji.className = "itemEmoji";
+    emoji.textContent = item.emoji;
+    const info = document.createElement("div");
+    info.className = "itemInfo";
+    const title = document.createElement("h3");
+    title.textContent = item.name;
+    const desc = document.createElement("p");
+    desc.textContent = item.description + " · Poziom: " + state.upgrades[key];
+    const price = document.createElement("div");
+    price.className = "cost";
+    price.textContent = "🍌 " + formatNumber(cost);
+    info.append(title, desc, price);
+    const buy = document.createElement("button
